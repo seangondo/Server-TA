@@ -59,20 +59,32 @@ conn.connect((err)=>{
     console.log('Mysql connected...');
 });
 
+function removeDuplicates(arr) {
+    if(arr.length == 0 || arr.length == 1) {
+        return arr;
+    }
+    var n = arr.length;
+    var temp = [];
+    var x = 0;
+
+    for(i = 0 ; i < n - 1; i++){
+        if (arr[i] !== arr[i+1] ) {
+            temp[x] = arr[i];
+            x++;
+        }
+    }
+    temp[x++] = arr[n-1];
+    return temp;
+}
+
 //-------------------< MQTT Subscribe Topic on Connect >-------------------//
 client.on('connect', () => {
-    var count = 0;
     let sql = `SELECT * FROM client_table ORDER BY house_id ASC`;
     let query = conn.query(sql, (err,result)=>{
         if (err) throw err;
         for(i = 0; i < result.length; i++){
             userData.push({'username': result[i]['username'], 'house_id': result[i]['house_id'], 'robot_id': result[i]['robot_id']});
-            db_houseID = db_houseID.concat(result[i]['house_id']);
-            if(db_houseID[count] == db_houseID[count-1]) {
-                const x = db_houseID.pop();
-            }
-            count++;
-
+            db_houseID.push(result[i]['house_id']);
             client.subscribe(`${result[i]['username']}/#`, function (err) {
                 if(err) {
                     console.log('Failed to subscribe! Check Server!')
@@ -89,29 +101,44 @@ client.on('connect', () => {
             totalSensor[db_houseID[i]] = 0;
         }
         sensorList();
+        db_houseID = removeDuplicates(db_houseID);
     });
-
 })
 
 
 
 //-------------------< MQTT Subscribe Topic on Connect >-------------------//
 client.on('message', function(topic, message) {
+
+    
+    //-------------------< Send to Apps >-------------------//
+    // if (task == false){
+    //     printVal(sendTime);
+    //     task = true;
+    // }
+
     var split = splitTopic('/'+topic+'/', message);
     checkDb(split);
 
-    split[2]
-    db_houseID;
+    // console.log(sum.length);
 
-    for(i = 0; i < db_houseID.length; i++) {
-        if(split[0] == db_houseID[i]) {
-            for(j = 0; j < sensorData.length; j++) {
-                if(split[2] == sensorData[j]['room'] && split[3] == sensorData[j]['sensor_type']) {
-                    
-                }
+    if(sum !== null && val !== null && avg !== null) {
+        for(i = 0; i < sum.length; i++) {
+            if(split[0] == sum[i]['house_id'] && split[2] == sum[i]['room'] && split[3] == sum[i]['type']) {
+                sum[i]['val'] += parseInt(message);
+                val[i]['val'] += 1;
             }
         }
     }
+    // for(i = 0; i < db_houseID.length; i++) {
+    //     if(split[0] == db_houseID[i]) {
+    //         for(j = 0; j < sensorData.length; j++) {
+    //             if((split[2] == sensorData[j]['room']) && (split[3] == sensorData[j]['sensor_type'])) {
+
+    //             }
+    //         }
+    //     }
+    // }
 
     // if(split[0] == sensorData[0]) {
     //     console.log('Msg ' + message)
@@ -150,7 +177,6 @@ function splitTopic(topic, value) {
         }
     }
     return arrObj;
-    // console.log(woke.length);
 }
 
 function checkDb(data) {
