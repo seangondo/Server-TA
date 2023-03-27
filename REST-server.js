@@ -26,7 +26,7 @@ app.get('/',function(req,res){
 
 app.post('/apps/caregiver/login', (req,res) => {
     let data = {username: req.body.username, password:req.body.password};
-    var sql = `SELECT caregiver_id FROM caregiver_list WHERE username="${req.body.username}" AND password="${req.body.password}"`;
+    var sql = `SELECT caregiver_id FROM caregiver_list WHERE (username="${req.body.username}" OR email="${req.body.username}") AND password="${req.body.password}"`;
     var cmdResult = false;
     var data_send = '';
     let query = conn.query(sql, data, (err, result)=>{
@@ -54,7 +54,7 @@ app.post('/apps/caregiver/login', (req,res) => {
             });
         } else {
             cmdResult = false;
-            res.send(`"username": "${req.body.username}", "command": "login", "result": ${cmdResult}`);
+            res.send(`{"username": "${req.body.username}", "command": "login", "result": ${cmdResult}}`);
         }
     })
 });
