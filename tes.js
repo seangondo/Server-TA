@@ -78,11 +78,12 @@ function removeDuplicates(arr) {
 
 //-------------------< MQTT Subscribe Topic on Connect >-------------------//
 client.on('connect', () => {
-    let sql = `SELECT * FROM client_table ORDER BY house_id ASC`;
+    let sql = `SELECT * FROM elder_list ORDER BY elder_id ASC`;
     let query = conn.query(sql, (err,result)=>{
         if (err) throw err;
         for(i = 0; i < result.length; i++){
-            userData.push({'username': result[i]['username'], 'house_id': result[i]['house_id'], 'robot_id': result[i]['robot_id']});
+            //userData.push({'username': result[i]['username'], 'house_id': result[i]['house_id'], 'robot_id': result[i]['robot_id']});
+            userData.push({'elder_id': result[i]['elder_id'], 'name': result[i]['name'], 'address': result[i]['address'], 'house_id': result[i]['house_id'], 'robot_id': result[i]['robot_id'], 'watch_id': result[i]['watch_id']});
             db_houseID.push(result[i]['house_id']);
             client.subscribe(`${result[i]['username']}/#`, function (err) {
                 if(err) {
@@ -90,7 +91,6 @@ client.on('connect', () => {
                 }
             })
         }
-        
         for(i = 0; i < db_houseID.length; i++) {
             client.subscribe(`${db_houseID[i]}/#`, function (err) {
                 if(err) {
@@ -102,6 +102,7 @@ client.on('connect', () => {
         sensorList();
         buttonList();
         elderList();
+        db_houseID.sort();
         db_houseID = removeDuplicates(db_houseID);
         for(i = 0; i < db_houseID.length; i++) {
             let sql = `CREATE TABLE IF NOT EXISTS ${db_houseID[i]}_house_trend (
@@ -117,8 +118,7 @@ client.on('connect', () => {
     });
 })
 
-
-//--------------------------------------------------< MAIN >----------------------------------------------------------//
+//===============================================================< MAIN >===============================================================//
 //-------------------< MQTT Subscribe Topic on Connect >-------------------//
 client.on('message', function(topic, message) {
 
@@ -129,7 +129,8 @@ client.on('message', function(topic, message) {
 
     //-------------------< SPLIT TOPIC FOR CALCULATING >-------------------//
     var split = splitTopic('/'+topic+'/', message);
-    checkDb(split);
+    varCheck(split[0]);
+    //checkDb(split);
 
     //-------------------< ADD VALUE FOR AVERAGE >-------------------//
     if((sum !== null && val !== null && avg !== null) && (sumTrend !== null && valTrend !== null && avgTrend !== null)) {
@@ -164,6 +165,7 @@ client.on('message', function(topic, message) {
     }
 
 });
+//===============================================================< END MAIN >===============================================================//
 
 function sensorList(){
     let sql = `SELECT * FROM db_sensor ORDER BY house_id ASC`;
@@ -190,6 +192,22 @@ function sensorList(){
                         'sensor_type': result[x]['sensor_type'],
                         'trend': result[x]['trend']
                     });
+                } else if(sensorData.length > result.length) {
+                    var c = 0;
+                    var y = [];
+                    for(i = 0; i < sensorData.length; i++) {
+                        for(j = 0; j < result.length; j++) {
+                            if(result[j] == sensorData[i]) {
+                                c += 1;
+                            } 
+                        }
+                        y.push(c);
+                    }
+                    for(i = 0; i< y.length; i++) {
+                        if(y[i] == 0) {
+                            sensorData.splice(i, 1);
+                        }
+                    }
                 }
             }
         } else {
@@ -244,6 +262,22 @@ function buttonList(){
                         'button_type': result[x]['button_type'],
                         'var': 0
                     });
+                } else if(buttonData.length > result.length) {
+                    var c = 0;
+                    var y = [];
+                    for(i = 0; i < buttonData.length; i++) {
+                        for(j = 0; j < result.length; j++) {
+                            if(result[j] == buttonData[i]) {
+                                c += 1;
+                            } 
+                        }
+                        y.push(c);
+                    }
+                    for(i = 0; i< y.length; i++) {
+                        if(y[i] == 0) {
+                            buttonData.splice(i, 1);
+                        }
+                    }
                 }
             }
         } else {
@@ -291,6 +325,22 @@ function elderList(){
                         'robot_id': result[x]['robot_id'], 
                         'watch_id': result[x]['watch_id'] 
                     });
+                } else if(elderData.length > result.length) {
+                    var c = 0;
+                    var y = [];
+                    for(i = 0; i < elderData.length; i++) {
+                        for(j = 0; j < result.length; j++) {
+                            if(result[j] == elderData[i]) {
+                                c += 1;
+                            } 
+                        }
+                        y.push(c);
+                    }
+                    for(i = 0; i< y.length; i++) {
+                        if(y[i] == 0) {
+                            elderData.splice(i, 1);
+                        }
+                    }
                 }
             }
         } else {
@@ -314,7 +364,7 @@ function elderList(){
     });
 }
 
-function splitTopic(topic, value) {
+function splitTopic(topic) {
     var arrObj = []
     var i = 0;
     var index = 0;
@@ -331,25 +381,27 @@ function splitTopic(topic, value) {
     return arrObj;
 }
 
-function checkDb(data) {
-    if(data[1] == 'receive_sensor') {
-        let sql = `SELECT COUNT(house_id) AS n FROM db_sensor WHERE house_id='${data[0]}' AND room='${data[2]}' AND sensor_type='${data[3]}'`;
-        let query = conn.query(sql, (err,result)=>{
-            if (err) throw err;
-            if (result[0]['n'] == 0) {
-                addSensorDb(data);
-            }
-        });
-        varCheck(data[0]);
-    }
-}
+//---------------------------------------------------< ADD SENSOR FROM TOPIC >---------------------------------------------------//
+// function checkDb(data) {
+//     if(data[1] == 'receive_sensor') {
+//         let sql = `SELECT COUNT(house_id) AS n FROM db_sensor WHERE house_id='${data[0]}' AND room='${data[2]}' AND sensor_type='${data[3]}'`;
+//         let query = conn.query(sql, (err,result)=>{
+//             if (err) throw err;
+//             if (result[0]['n'] == 0) {
+//                 addSensorDb(data);
+//             }
+//         });
+//         varCheck(data[0]);
+//     }
+// }
 
-function addSensorDb(data) {
-    let sql = `INSERT INTO db_sensor (house_id, room, sensor_type) VALUES ('${data[0]}', '${data[2]}', '${data[3]}') `;
-    let query = conn.query(sql, (err,result)=>{
-        if (err) throw err;
-    });
-}
+// function addSensorDb(data) {
+//     let sql = `INSERT INTO db_sensor (house_id, room, sensor_type) VALUES ('${data[0]}', '${data[2]}', '${data[3]}') `;
+//     let query = conn.query(sql, (err,result)=>{
+//         if (err) throw err;
+//     });
+// }
+
 
 function varCheck(id) {
     //let sql = `SELECT COUNT(house_id) AS n FROM db_sensor WHERE house_id='${id}'`;
@@ -490,9 +542,10 @@ function trendVal(nowType, room, sensor_type, dateFix, value, houseid) {
     let sql = `INSERT INTO ${nowType} (room, type, date, value) VALUES ('${room}', '${sensor_type}', '${dateFix}', ${value});`;
     let query = conn.query(sql, (err,result)=>{
         // if (err) throw err;
-        if (err) {
-            console.log('ERROR' + err['sql'])
-        } else {
+        // if (err) {
+        //     // console.log('ERROR' + err['sql'])
+        // } else {
+        if(!err){
             let sql = `SELECT * FROM ${nowType} WHERE room='${room}' AND type='${sensor_type}' ORDER BY DATE DESC;`;
             let query = conn.query(sql, (err,result)=>{
                 if (err) throw err;
