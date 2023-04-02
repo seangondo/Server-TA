@@ -697,7 +697,6 @@ async function dbCleanup(time, dataCount) {
             let sql = `SELECT * FROM ${house_id} WHERE room='${sensorData[i]['room']}' AND type='${sensorData[i]['sensor_type']}' ORDER BY DATE ASC;`;
             let query = conn.query(sql, (err, result)=>{
                 if(err) throw err;
-                console.log("masuk1");
                 var string = JSON.stringify(result);
                 var count = JSON.parse(string);
                 if(result.length > dataCount) {
