@@ -6,16 +6,9 @@ var PI = 3.141592653589793238;
 
 var task = false;
 var task1 = false;
-// var house_id = '10001';
-// var user = 'user';
+var task2 = false;
 
 var sendTime = 2; //in Seconds
-
-var count = 0;
-
-var woke = [];
-
-var sensorArr = [];
 
 var totalSensor = [];
 
@@ -26,7 +19,7 @@ const sumTrend = [];
 const valTrend = [];
 const avgTrend = [];
 
-let db_houseID = [];
+var db_houseID = [];
 const userData = [];
 const sensorData = [];
 const buttonData = [];
@@ -85,7 +78,7 @@ client.on('connect', () => {
             //userData.push({'username': result[i]['username'], 'house_id': result[i]['house_id'], 'robot_id': result[i]['robot_id']});
             userData.push({'elder_id': result[i]['elder_id'], 'name': result[i]['name'], 'address': result[i]['address'], 'house_id': result[i]['house_id'], 'robot_id': result[i]['robot_id'], 'watch_id': result[i]['watch_id']});
             db_houseID.push(result[i]['house_id']);
-            client.subscribe(`${result[i]['username']}/#`, function (err) {
+            client.subscribe(`${result[i]['elder_id']}/#`, function (err) {
                 if(err) {
                     console.log('Failed to subscribe! Check Server!')
                 }
@@ -145,12 +138,75 @@ client.on('message', function(topic, message) {
         }
     }
 
+    //-------------------< BUTTON FROM APPS >-------------------//
     if(buttonData !== null) {
-        for(i = 0; i < buttonData.length; i++) {
-            if(split[3] == "control_button" && split[4] == buttonData[i]['button_type']) {
-                console.log("TAMBAHI CEK HOUSE ID")
+        if(split[2] == 'control_button') {
+            var msg = JSON.parse(message)
+            //--------------------------------- < AUTOMATIC MODE > -----------------------------------//
+            if(split[3] == 'automatic_mode') {
+                for(var i = 0; i < userData.length; i++) {
+                    if(split[0] == userData[i]['elder_id']) {
+                        if(msg['var'] == 1) {
+                            broadcastButton(userData[i]['house_id'], 'user', split[3], 'automatic_mode', msg['value']);
+                        }
+                    }
+                }
+                for(var i = 0; i < db_houseID.length; i++) {
+                    if(split[0] == db_houseID[i]) {
+                        if(msg['var'] == 1) {
+                            broadcastButton(db_houseID[i], 'user', split[3], 'automatic_mode', msg['value']);
+                        }
+                    }
+                }
+            } 
+            //--------------------------------- < BUTTON MODE > -----------------------------------//
+            else {
+                for(var i = 0; i < userData.length; i++) {
+                    if(split[0] == userData[i]['elder_id']) {
+                        if(msg['var'] == 1) {
+                            broadcastButton(userData[i]['house_id'], 'user', split[3], split[4], msg['value']);
+                        }
+                    }
+                }
+                for(var i = 0; i < db_houseID.length; i++) {
+                    if(split[0] == db_houseID[i]) {
+                        if(msg['var'] == 1) {
+                            broadcastButton(db_houseID[i], 'user', split[3], split[4], msg['value']);
+                        }
+                    }
+                }
             }
         }
+
+        // for(var i = 0; i < buttonData.length; i++) {
+        //     if(split[2] == 'control_button' && split[3] == buttonData[i]['room'] && split[4] == buttonData[i]['button_type']) {
+        //         var msg = JSON.parse(message)
+        //         if(msg['var'] == 1) {
+        //             if(split[0] == buttonData[i]['house_id']) {
+        //                 broadcastButton(buttonData[i]['house_id'], 'house', buttonData[i]['room'], buttonData[i]['button_type'], msg['value']);
+        //             } else {
+        //                 broadcastButton(buttonData[i]['house_id'], 'user', buttonData[i]['room'], buttonData[i]['button_type'], msg['value']);
+        //             }
+        //         }
+        //     }
+        // }
+        // if (split[2] == 'control_button' && split[3] == 'automatic_mode') {
+        //     var msg = JSON.parse(message)
+        //     for(var i = 0; i < userData.length; i++) {
+        //         if(split[0] == userData[i]['elder_id']) {
+        //             if(msg['var'] == 1) {
+        //                 broadcastButton(userData[i]['house_id'], 'user', split[3], 'automatic_mode', msg['value']);
+        //             }
+        //         }
+        //     }
+        //     for(var i = 0; i < db_houseID.length; i++) {
+        //         if(split[0] == db_houseID[i]) {
+        //             if(msg['var'] == 1) {
+        //                 broadcastButton(db_houseID[i], 'user', split[3], 'automatic_mode', msg['value']);
+        //             }
+        //         }
+        //     }
+        // }
     }
     
     //-------------------< Send to Apps >-------------------//
@@ -162,6 +218,9 @@ client.on('message', function(topic, message) {
     if (task1 == false){
         printVal2(10);
         task1 = true;
+    }
+    if (task2 == false) {
+        dbCleanup(10, 180);
     }
 
 });
@@ -381,28 +440,6 @@ function splitTopic(topic) {
     return arrObj;
 }
 
-//---------------------------------------------------< ADD SENSOR FROM TOPIC >---------------------------------------------------//
-// function checkDb(data) {
-//     if(data[1] == 'receive_sensor') {
-//         let sql = `SELECT COUNT(house_id) AS n FROM db_sensor WHERE house_id='${data[0]}' AND room='${data[2]}' AND sensor_type='${data[3]}'`;
-//         let query = conn.query(sql, (err,result)=>{
-//             if (err) throw err;
-//             if (result[0]['n'] == 0) {
-//                 addSensorDb(data);
-//             }
-//         });
-//         varCheck(data[0]);
-//     }
-// }
-
-// function addSensorDb(data) {
-//     let sql = `INSERT INTO db_sensor (house_id, room, sensor_type) VALUES ('${data[0]}', '${data[2]}', '${data[3]}') `;
-//     let query = conn.query(sql, (err,result)=>{
-//         if (err) throw err;
-//     });
-// }
-
-
 function varCheck(id) {
     //let sql = `SELECT COUNT(house_id) AS n FROM db_sensor WHERE house_id='${id}'`;
     let sql = `SELECT * FROM db_sensor WHERE house_id='${id}'`;
@@ -598,4 +635,101 @@ function alarmSend(date, time, type, message, houseid) {
             `,options);
         }
     }
+}
+
+async function broadcastButton(room_id, type, room, sensor, value) {
+    if(room !== 'automatic_mode') {
+        for(i = 0; i < userData.length; i++){
+            if(userData[i]['house_id'] == room_id) {
+                client.publish(`${userData[i]['elder_id']}/apps/control_button/${room}/${sensor}`, `
+                {
+                    "value":"${value}",
+                    "var": 0
+                }
+                `,options);
+            }
+        }
+        for(var i = 0; i < db_houseID.length; i++) {
+            if(db_houseID[i] == room_id) {
+                client.publish(`${db_houseID[i]}/send_sensor/control_button/${room}/${sensor}`, `
+                {
+                    "value": "${value}",
+                    "var": 0
+                }`
+                ,options);
+            }
+        }
+    } 
+    else {
+        for(var i = 0; i < userData.length; i++){
+            if(userData[i]['house_id'] == room_id) {
+                client.publish(`${userData[i]['elder_id']}/apps/control_button/${room}`, `
+                {
+                    "value":"${value}",
+                    "var": 0
+                }
+                `,options);
+            }
+        }
+        for(var i = 0; i < db_houseID.length; i++) {
+            if(db_houseID[i] == room_id) {
+                client.publish(`${db_houseID[i]}/send_sensor/control_button/${room}`, `
+                {
+                    "value":"${value}",
+                    "var": 0
+                }
+                `,options);
+    
+            }
+        }
+    }
+}
+
+
+//TODO CLEANUP DATABASE
+//MASIH BUG KALO 2 HOUSE ID ATAU LEBIH!!!
+async function dbCleanup(time, dataCount) {
+
+    await delay(time);
+    for(var i = 0; i < sensorData.length; i++) {
+        if(sensorData[i]['trend'] == "yes") {
+            var house_id = `${sensorData[i]['house_id']}_house_trend`;
+            let sql = `SELECT * FROM ${house_id} WHERE room='${sensorData[i]['room']}' AND type='${sensorData[i]['sensor_type']}' ORDER BY DATE ASC;`;
+            let query = conn.query(sql, (err, result)=>{
+                if(err) throw err;
+                console.log("masuk1");
+                var string = JSON.stringify(result);
+                var count = JSON.parse(string);
+                if(result.length > dataCount) {
+                    var length = result.length-dataCount;
+                    for(var j = 0; j < length; j++) {
+                        var myDate = new Date(count[j]['date']);
+                        var dateFix = convertDate(myDate);
+                        deleteData(house_id, result[j]['room'], result[j]['type'], result[j]['value'], dateFix);
+                        // let sql = `DELETE FROM ${house_id} WHERE room='${result[j]['room']}' AND type='${result[j]['type']}'AND value=${result[j]['value']} AND date='${dateFix}' LIMIT 1;`;
+                        // let query = conn.query(sql, (err, result)=>{
+                        //     if(err) throw err;
+                        //     console.log("masuk2");
+                        // });
+                    }
+                }
+            });
+        }
+    }
+    task2 = false;
+}
+
+function deleteData(house_id, room, type, value, date) {
+    let sql = `DELETE FROM ${house_id} WHERE room='${room}' AND type='${type}'AND value=${value} AND date='${date}' LIMIT 1;`;
+    let query = conn.query(sql, (err, result)=>{
+        if(err) throw err;
+        console.log("masuk2");
+    });
+}
+
+function convertDate(date) {
+    var date1 = date.toLocaleDateString('ko-KR', 'Asia/Jakarta').replaceAll('. ', '-').replace('.','');
+    var date2 = date.toLocaleTimeString('en-GB', 'Asia/Jakarta');
+    var dateFix = date1+' '+date2;
+    return dateFix;
 }
