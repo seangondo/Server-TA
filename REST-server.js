@@ -1,4 +1,6 @@
 const express = require('express');
+const https = require("https");
+const fs = require('fs');
 const bodyParser = require('body-parser');
 const app = express();
 const mysql = require('mysql2');
@@ -75,9 +77,22 @@ app.post('/apps/caregiver/login', (req,res) => {
     })
 });
 
+https
+  .createServer(
+		// Provide the private and public key to the server by reading each
+		// file's content with the readFileSync() method.
+    {
+      key: fs.readFileSync("/home/pi/sslKey/privkey.pem"),
+      cert: fs.readFileSync("/home/pi/sslKey/fullchain.pem"),
+    },
+    app
+  )
+  .listen(8000, () => {
+    console.log("server is runing at port 8000");
+  });
 
- app.listen(8000,()=>{
-    console.log('Server Running \nIP\t: localhost \nPort\t: 8000\n\n');
-});
+//  app.listen(8000,()=>{
+//     console.log('Server Running \nIP\t: localhost \nPort\t: 8000\n\n');
+// });
 
 // TODO apps get sensors data etc
