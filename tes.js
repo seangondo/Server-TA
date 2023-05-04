@@ -483,44 +483,48 @@ async function printVal(time){
     var date2 = dateNow.toLocaleTimeString('en-GB', 'Asia/Jakarta');
 
     //-------------------< Calculate Average >-------------------//
-    for (i = 0; i < sum.length; i ++) {
-        avg[i]['val'] = sum[i]['val'] / val[i]['val'];
+    for (var i = 0; i < sum.length; i ++) {
+        if(sum[i]['val'] != 0) {
+            avg[i]['val'] = sum[i]['val'] / val[i]['val'];
+        }
     }
 
-    for(x = 0; x < sum.length; x++) {
-        if(avg[x]['type'] == 'temp') {
-            if(Math.round(avg[x]['val']) > 40) {
-                alarmSend(date1, date2, "Smart Home", `Suhu ${avg[x]['room']} terlalu tinggi!`, avg[x]['house_id']);
-            } 
-            else if (Math.round(avg[x]['val']) < 20) {
-                alarmSend(date1, date2, "Smart Home", `Suhu ${avg[x]['room']} terlalu rendah!`, avg[x]['house_id']);
-            }
-        }
-        if(avg[x]['type'] == 'gas') {
-            if(Math.round(avg[x]['val']) > 800) {
-                alarmSend(date1, date2, "Smart Home", `Terjadi kebocoran gas! Segera cek gas ${avg[x]['room']}!`, avg[x]['house_id']);
-            }
-        }
-
-        var data = '';
-        var topic = '';
-        for(j = 0; j < elderData.length; j++) {
-            for(i = 0; i < avg.length; i++){
-                if(elderData[j]['house_id'] == avg[i]['house_id']) {
-                    topic = `${elderData[j]['elder_id']}/apps/data`;
-                    data += `"${avg[i]['room'].replaceAll(' ','')}_${avg[i]['type']}":"${Math.round(avg[i]['val'])}"`;
-                    if(i != avg.length - 1){
-                        data += ',';
-                    }
+    for(var x = 0; x < sum.length; x++) {
+        if(sum[x]['val'] != 0) {
+            if(avg[x]['type'] == 'temp') {
+                if(Math.round(avg[x]['val']) > 40) {
+                    alarmSend(date1, date2, "Smart Home", `Suhu ${avg[x]['room']} terlalu tinggi!`, avg[x]['house_id']);
+                } 
+                else if (Math.round(avg[x]['val']) < 20) {
+                    alarmSend(date1, date2, "Smart Home", `Suhu ${avg[x]['room']} terlalu rendah!`, avg[x]['house_id']);
                 }
             }
-            client.publish(`${elderData[j]['elder_id']}/apps/data`, `[{${data}}]`, options);
-            data = '';
-        }
-        
-        for (i = 0; i < sum.length; i ++) {
-            sum[i]['val'] = 0;
-            val[i]['val'] = 0;
+            if(avg[x]['type'] == 'gas') {
+                if(Math.round(avg[x]['val']) > 800) {
+                    alarmSend(date1, date2, "Smart Home", `Terjadi kebocoran gas! Segera cek gas ${avg[x]['room']}!`, avg[x]['house_id']);
+                }
+            }
+
+            var data = '';
+            var topic = '';
+            for(j = 0; j < elderData.length; j++) {
+                for(i = 0; i < avg.length; i++){
+                    if(elderData[j]['house_id'] == avg[i]['house_id']) {
+                        topic = `${elderData[j]['elder_id']}/apps/data`;
+                        data += `"${avg[i]['room'].replaceAll(' ','')}_${avg[i]['type']}":"${Math.round(avg[i]['val'])}"`;
+                        if(i != avg.length - 1){
+                            data += ',';
+                        }
+                    }
+                }
+                client.publish(`${elderData[j]['elder_id']}/apps/data`, `[{${data}}]`, options);
+                data = '';
+            }
+            
+            for (i = 0; i < sum.length; i ++) {
+                sum[i]['val'] = 0;
+                val[i]['val'] = 0;
+            }
         }
     }
 
@@ -539,23 +543,29 @@ async function printVal2(time){
     
     //-------------------< Calculate Average >-------------------//
     for (i = 0; i < sumTrend.length; i ++) {
-        avgTrend[i]['val'] = sumTrend[i]['val'] / valTrend[i]['val'];
+        if(sumTrend[i]['val'] != 0) {
+            avgTrend[i]['val'] = sumTrend[i]['val'] / valTrend[i]['val'];
+        }
     }
 
     for(i = 0; i < sensorData.length; i++) {
         for(j = 0; j < avgTrend.length; j++) {
-            if(avgTrend[j]['house_id'] == sensorData[i]['house_id'] && avgTrend[j]['room'] == sensorData[i]['room'] && avgTrend[j]['type'] == sensorData[i]['sensor_type'] ) {
-                if(sensorData[i]['trend'] == "yes") {
-                    trendVal(`${avgTrend[j]['house_id']}_house_trend`, avgTrend[j]['room'], avgTrend[j]['type'], dateFix, avgTrend[j]['val'], avgTrend[j]['house_id']);
-                    // console.log(`${avgTrend[j]['house_id']} == ${avgTrend[j]['room']} == ${avgTrend[j]['type']} == ${avgTrend[j]['val']}`);
+            if(sumTrend[j]['val'] != 0) {
+                if(avgTrend[j]['house_id'] == sensorData[i]['house_id'] && avgTrend[j]['room'] == sensorData[i]['room'] && avgTrend[j]['type'] == sensorData[i]['sensor_type'] ) {
+                    if(sensorData[i]['trend'] == "yes") {
+                        trendVal(`${avgTrend[j]['house_id']}_house_trend`, avgTrend[j]['room'], avgTrend[j]['type'], dateFix, avgTrend[j]['val'], avgTrend[j]['house_id']);
+                        // console.log(`${avgTrend[j]['house_id']} == ${avgTrend[j]['room']} == ${avgTrend[j]['type']} == ${avgTrend[j]['val']}`);
+                    }
                 }
             }
         }
     }
 
-    for(i = 0; i < sumTrend.length; i++) {
-        sumTrend[i]['val'] = 0;
-        valTrend[i]['val'] = 0;
+    for(var i = 0; i < sumTrend.length; i++) {
+        if(sumTrend[i]['val'] != 0) {
+            sumTrend[i]['val'] = 0;
+            valTrend[i]['val'] = 0;
+        }
     }
     // for(x = 0; x < sensorData.length; x++) {
         
